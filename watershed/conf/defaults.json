@@ -1,5 +1,10 @@
 {
   "AWS": {
+    "CloudWatch":{
+      "alarmOnIdle": true,
+      "alarmAfter": 120,
+      "alarmActions": ["arn:aws:sns:us-east-1:<ACCOUNT>:<SNS_TOPIC>"]
+    },
     "S3": {
       "accessKey": "accessKey",
       "secretKey": "secretKey",

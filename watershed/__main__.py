@@ -209,6 +209,7 @@ if __name__ == "__main__":
             launch_emr_cluster(
                 config['AWS']['S3'],
                 config['AWS']['EMR'],
+                config['AWS']['CloudWatch'],
                 config['AWS']['profile'],
                 args.wait_until_ready,
                 args.logging
@@ -254,6 +255,7 @@ if __name__ == "__main__":
             cluster_id = launch_emr_cluster(
                 config['AWS']['S3'],
                 config['AWS']['EMR'],
+                config['AWS']['CloudWatch'],
                 config['AWS']['profile'],
                 True,
                 args.logging

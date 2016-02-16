@@ -58,7 +58,7 @@ def wait_for_cluster(cluster_id, profile="default"):
     _wait_till_not_running_steps(cluster_id, profile)
 
 
-def launch_emr_cluster(s3_config=None, emr_config=None, profile="default", wait_until_ready=False, logging=False):
+def launch_emr_cluster(s3_config=None, emr_config=None, alarm_config=None, profile="default", wait_until_ready=False, logging=False):
     emr_client = boto3.session.Session(profile_name=profile).client('emr')
 
     s3_url = "s3://"+s3_config['resourcesBucket']+"/"+s3_config['resourcesPrefix']
@@ -198,6 +198,27 @@ def launch_emr_cluster(s3_config=None, emr_config=None, profile="default", wait_
             wait_for_cluster(cluster_id, profile)
             _wait_till_not_running_steps(cluster_id, profile)
             print("Cluster '{0}' ready.".format(cluster_id))
+        if alarm_config["alarmOnIdle"]:
+            print("Creating CloudWatch to alarm after " + str(alarm_config["alarmAfter"]) + " minutes.")
+            cw_client = boto3.session.Session(profile_name=profile).client("cloudwatch")
+            cw_client.put_metric_alarm(
+                AlarmName="Watershed is Idle for too long",
+                ActionsEnabled=True,
+                AlarmActions=alarm_config["alarmActions"],
+                MetricName="IsIdle",
+                Namespace="AWS/ElasticMapReduce",
+                Statistic="Average",
+                Period=60,
+                Dimensions=[
+                    {
+                        "Name": "JobFlowId",
+                        "Value": return_json['JobFlowId']
+                    }
+                ],
+                EvaluationPeriods=alarm_config["alarmAfter"],
+                Threshold=1,
+                ComparisonOperator="GreaterThanOrEqualToThreshold"
+            )
         return return_json['JobFlowId']
     except Exception as aws_except:
         raise ValueError(aws_except)
@@ -211,6 +232,10 @@ def terminate_emr_cluster(cluster_ids=None, profile='default'):
         print("Attempted to terminate the following cluster Ids:")
         for cluster_id in cluster_ids:
             print("  * '"+cluster_id+"'")
+        cw_client = boto3.session.Session(profile_name=profile).client("cloudwatch")
+        cw_client.delete_alarms(
+            AlarmNames=["Watershed is Idle for too long"]
+        )
     except Exception as aws_except:
         raise ValueError(aws_except)
 
