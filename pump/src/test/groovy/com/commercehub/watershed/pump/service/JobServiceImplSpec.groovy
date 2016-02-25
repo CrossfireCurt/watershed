@@ -7,7 +7,7 @@ import com.commercehub.watershed.pump.model.JobPreview
 import com.commercehub.watershed.pump.model.PreviewSettings
 import com.commercehub.watershed.pump.model.PumpSettings
 import com.commercehub.watershed.pump.processing.JobRunnable
-import com.commercehub.watershed.pump.respositories.QueryableRepository
+import com.commercehub.watershed.pump.repositories.QueryableRepository
 import spock.lang.Specification
 
 import java.util.concurrent.ExecutorService

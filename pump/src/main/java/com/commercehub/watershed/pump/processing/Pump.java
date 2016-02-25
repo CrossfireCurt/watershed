@@ -7,7 +7,7 @@ import com.commercehub.watershed.pump.model.DrillResultRow;
 import com.commercehub.watershed.pump.model.PumpRecord;
 import com.commercehub.watershed.pump.model.PumpRecordResult;
 import com.commercehub.watershed.pump.model.PumpSettings;
-import com.commercehub.watershed.pump.respositories.DrillRepository;
+import com.commercehub.watershed.pump.repositories.DrillRepository;
 import com.commercehub.watershed.pump.service.KinesisService;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
