@@ -2,7 +2,6 @@ package com.commercehub.watershed.pump.repositories
 
 import com.commercehub.watershed.pump.model.JobPreview
 import com.commercehub.watershed.pump.model.PreviewSettings
-import com.commercehub.watershed.pump.respositories.DrillRepository
 import com.google.inject.Provider
 import spock.lang.Specification
 

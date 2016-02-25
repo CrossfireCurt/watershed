@@ -1,4 +1,4 @@
-package com.commercehub.watershed.pump.respositories;
+package com.commercehub.watershed.pump.repositories;
 
 
 import com.commercehub.watershed.pump.model.JobPreview;
