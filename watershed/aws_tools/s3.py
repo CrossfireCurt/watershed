@@ -17,7 +17,9 @@ import os
 import json
 
 
-def upload_resources(s3_config=None, profile="default", force_upload=False):
+def upload_resources(config, force_upload=False):
+    s3_config = config['S3']
+    profile = config['profile']
     s3_resource = boto3.session.Session(profile_name=profile).resource('s3')
 
     try:
@@ -25,6 +27,7 @@ def upload_resources(s3_config=None, profile="default", force_upload=False):
         project_root = os.path.dirname(os.path.abspath(__file__)).replace('/aws_tools', '/')
         if s3_resource.Bucket(s3_config['resourcesBucket']) in s3_resource.buckets.all() and not force_upload:
             raise ValueError("Bucket already exists, run with -f to force upload.")
+
         s3_resource.create_bucket(Bucket=s3_config['resourcesBucket'])
         for folder in os.walk(project_root+'resources/s3'):
             # for all directories within the local_resources_directory
@@ -41,7 +44,10 @@ def upload_resources(s3_config=None, profile="default", force_upload=False):
         raise ValueError(aws_except)
         
         
-def upload_pump(s3_config=None, profile="default", force_upload=False):
+def upload_pump(config, force_upload=False):
+    s3_config = config['S3']
+    profile = config['profile']
+
     s3_resource = boto3.session.Session(profile_name=profile).resource('s3')
 
     try:
@@ -63,7 +69,9 @@ def upload_pump(s3_config=None, profile="default", force_upload=False):
         raise ValueError(aws_except)
 
 
-def upload_stream_archive_configuration(s3_config=None, configs=None, profile="default"):
+def upload_stream_archive_configuration(config=None, drill_configs=None):
+    s3_config = config['S3']
+    profile = config['profile']
     s3_resource = boto3.session.Session(profile_name=profile).resource('s3')
     paths = []
     try:

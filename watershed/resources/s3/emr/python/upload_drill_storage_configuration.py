@@ -16,25 +16,22 @@
 
 import json
 import sys
+import boto
 from urllib2 import urlopen, Request
-from simples3.bucket import S3Bucket
-
 
 if __name__ == "__main__":
     with open('/mnt/var/lib/info/instance.json', 'r') as f:
         if not json.load(f)["isMaster"]:
             exit()
-    s = S3Bucket(
-        sys.argv[1],
-        sys.argv[2],
-        sys.argv[3]
-    )
+    conn = boto.connect_s3()
+    bucket = conn.get_bucket(sys.argv[1])
 
-    stream_archive_config_files = sys.argv[4:]
+    stream_archive_config_files = sys.argv[2:]
 
     for config_file_path in stream_archive_config_files:
 
-        config_file = s.get(config_file_path)
+        config_file_key = boto.s3.key.Key(bucket, config_file_path)
+        config_file = config_file_key.get_contents_as_string()
         json_name = config_file_path.split('/')[len(config_file_path.split('/'))-1]
         drill_upload_request = Request(
             'http://localhost:8047/storage/'+json_name,
@@ -44,5 +41,5 @@ if __name__ == "__main__":
             }
         )
         urlopen(drill_upload_request)
-        s.delete(config_file_path)
+        config_file_key.delete()
 
