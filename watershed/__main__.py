@@ -64,15 +64,6 @@ Python/Boto solution which compliments Amazon Kinesis with:
         help="Specify the location of the private key file",
         required=True
     )
-    _profile_args = [
-        "-p",
-        "--profile"
-    ]
-    _profile_kwargs = dict(
-        action="store",
-        help="Specify the AWS profile to use. Defaults to 'default'",
-        default='default'
-    )
     _wait_until_ready_args = [
         '-w',
         '--wait-until-ready'
@@ -165,7 +156,6 @@ Python/Boto solution which compliments Amazon Kinesis with:
     wait_for_cluster_parser.set_defaults(which="wait-for-cluster")
     wait_for_cluster_parser.add_argument(*_config_file_args, **_config_file_kwargs)
     wait_for_cluster_parser.add_argument(*_cluster_id_args, **_cluster_id_kwargs)
-    wait_for_cluster_parser.add_argument(*_profile_args, **_profile_kwargs)
     do_everything_parser = subparsers.add_parser(
         'all',
         help="Start a cluster and forward ports using configuration files"
@@ -230,7 +220,7 @@ if __name__ == "__main__":
             print("Cluster can take more than 5 minutes to start...")
             wait_for_cluster(
                 args.cluster_id,
-                args.profile
+                args.config['AWS']['profile']
             )
             print("Cluster ready.")
         elif args.which == "all":
