@@ -44,9 +44,9 @@ def get_master_address(cluster_id, profile="default"):
     if cluster_id is None:
         raise ValueError("Cluster ID cannot be none.")
     try:
-        json_description = emr_client.describe_cluster(ClusterId=cluster_id)
+        json_description = emr_client.list_instances(ClusterId=cluster_id, InstanceGroupTypes=['MASTER'])
         print(json_description)
-        return json_description['Cluster']['MasterPublicDnsName']
+        return json_description['Instances'][0]['PrivateIpAddress']
     except Exception as aws_except:
         raise ValueError(aws_except)
 
@@ -321,7 +321,7 @@ def configure_stream_archives(cluster_id, config=None):
     conf_files = []
     for dfs_url in archives.keys():
         conf_file = {
-            "name": dfs_url.split('@')[1],
+            "name": dfs_url.split('s3://')[1],
             "config": {
                 "type": "file",
                 "enabled": "true",

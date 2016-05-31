@@ -188,7 +188,7 @@ if __name__ == "__main__":
                 config['AWS'],
                 args.force_upload
             )
-            
+
             upload_pump(
                 config['AWS'],
                 args.force_upload
@@ -220,7 +220,7 @@ if __name__ == "__main__":
             print("Cluster can take more than 5 minutes to start...")
             wait_for_cluster(
                 args.cluster_id,
-                args.config['AWS']['profile']
+                config['AWS']['profile']
             )
             print("Cluster ready.")
         elif args.which == "all":

@@ -39,11 +39,11 @@ def upload_resources(config, force_upload=False):
                     s3_resource.Object(s3_config['resourcesBucket'], s3_file_path).put(Body=open(folder[0]+'/'+file, 'rb'))
                     file_upload_count += 1
         print("Resource upload successful, {0} files uploaded.".format(file_upload_count))
-                
+
     except Exception as aws_except:
         raise ValueError(aws_except)
-        
-        
+
+
 def upload_pump(config, force_upload=False):
     s3_config = config['S3']
     profile = config['profile']
@@ -53,17 +53,17 @@ def upload_pump(config, force_upload=False):
     try:
         file_upload_count = 0
         pump_root = os.path.dirname(os.path.abspath(__file__)).replace('/watershed/aws_tools', '/pump')
-        
+
         for dirpath, dirs, files in os.walk(pump_root):
             if "build" in dirpath:
                 print("Skipping build directory: {0}".format(dirpath))
                 continue
-                
+
             for file in files:
                 s3_file_path = s3_config['resourcesPrefix'] + dirpath.replace(pump_root, "/pump") + "/" + file
                 s3_resource.Object(s3_config['resourcesBucket'], s3_file_path).put(Body=open(dirpath + "/" + file, 'rb'))
                 file_upload_count += 1
-        
+
         print("Pump upload successful, {0} files uploaded.".format(file_upload_count))
     except Exception as aws_except:
         raise ValueError(aws_except)
@@ -76,7 +76,7 @@ def upload_stream_archive_configuration(config=None, drill_configs=None):
     paths = []
     try:
         file_upload_count = 0
-        for config in configs:
+        for config in drill_configs:
             s3_file_path = s3_config['resourcesPrefix']+'/configs/'+config['name']+'.json'
             byte_output = str.encode(json.dumps(config))
             s3_resource.Object(s3_config['resourcesBucket'], s3_file_path).put(

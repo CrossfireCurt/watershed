@@ -31,15 +31,13 @@ if __name__ == "__main__":
     for config_file_path in stream_archive_config_files:
 
         config_file_key = boto.s3.key.Key(bucket, config_file_path)
-        config_file = config_file_key.get_contents_as_string()
         json_name = config_file_path.split('/')[len(config_file_path.split('/'))-1]
         drill_upload_request = Request(
             'http://localhost:8047/storage/'+json_name,
-            config_file.read(),
+            config_file_key.read(),
             {
                 "Content-Type": "application/json"
             }
         )
         urlopen(drill_upload_request)
         config_file_key.delete()
-

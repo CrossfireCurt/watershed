@@ -22,7 +22,7 @@ from watershed.aws_tools.emr import get_master_address
 
 
 def forward_necessary_ports(cluster_id=None, private_key_path=None, profile='default'):
-    master_public_address = str(get_master_address(cluster_id, profile))
+    master_private_address = str(get_master_address(cluster_id, profile))
 
     forwarder_logger = create_logger(loglevel=40)
     ports = {
@@ -41,12 +41,12 @@ def forward_necessary_ports(cluster_id=None, private_key_path=None, profile='def
         port_number = ports[port]
         port_forwarders.append(
             SSHTunnelForwarder(
-                master_public_address,
+                master_private_address,
                 22,
                 ssh_username='hadoop',
                 ssh_private_key=private_key_path,
                 local_bind_address=('localhost', port_number),
-                remote_bind_address=(master_public_address, port_number),
+                remote_bind_address=(master_private_address, port_number),
                 logger=forwarder_logger
             )
         )
