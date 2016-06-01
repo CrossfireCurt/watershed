@@ -17,4 +17,4 @@
 sudo yum install -y python-pip
 sudo pip install --upgrade pip
 sudo cp /usr/local/bin/pip2.6 /usr/bin/pip-2.6
-sudo pip-2.6 install simples3
+sudo pip-2.6 install boto
