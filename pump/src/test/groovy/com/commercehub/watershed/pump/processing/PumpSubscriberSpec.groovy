@@ -3,7 +3,9 @@ package com.commercehub.watershed.pump.processing
 import com.amazonaws.services.kinesis.producer.UserRecordResult
 import com.commercehub.watershed.pump.model.Job
 import com.commercehub.watershed.pump.model.ProcessingStage
+import com.commercehub.watershed.pump.model.PumpRecordResult
 import com.commercehub.watershed.pump.model.PumpSettings
+import com.commercehub.watershed.pump.model.DrillResultRow
 import rx.Producer
 import spock.lang.Specification
 
@@ -198,7 +200,7 @@ public class PumpSubscriberSpec extends Specification {
         userRecordResult.isSuccessful() >> true
 
         when:
-        pumpSubscriber.onNext(userRecordResult)
+        pumpSubscriber.onNext(new PumpRecordResult(userRecordResult, Mock(DrillResultRow)))
 
         then:
         pumpSubscriber.successCount.get() == 1
@@ -209,7 +211,7 @@ public class PumpSubscriberSpec extends Specification {
         userRecordResult.isSuccessful() >> false
 
         when:
-        pumpSubscriber.onNext(userRecordResult)
+        pumpSubscriber.onNext(new PumpRecordResult(userRecordResult, Mock(DrillResultRow)))
 
         then:
         pumpSubscriber.failCount.get() == 1
@@ -220,7 +222,7 @@ public class PumpSubscriberSpec extends Specification {
         userRecordResult.isSuccessful() >> true
 
         when:
-        pumpSubscriber.onNext(userRecordResult)
+        pumpSubscriber.onNext(new PumpRecordResult(userRecordResult, Mock(DrillResultRow)))
 
         then:
         pumpSubscriber.successCount.get() == 1
@@ -233,7 +235,7 @@ public class PumpSubscriberSpec extends Specification {
 
         when:
         pumpSubscriber.successCount = new AtomicLong(3L)
-        pumpSubscriber.onNext(userRecordResult)
+        pumpSubscriber.onNext(new PumpRecordResult(userRecordResult, Mock(DrillResultRow)))
 
         then:
         job.successfulRecordCount != pumpSubscriber.successCount.get()
@@ -245,7 +247,7 @@ public class PumpSubscriberSpec extends Specification {
 
         when:
         pumpSubscriber.successCount = new AtomicLong(4L)
-        pumpSubscriber.onNext(userRecordResult)
+        pumpSubscriber.onNext(new PumpRecordResult(userRecordResult, Mock(DrillResultRow)))
 
         then:
         job.successfulRecordCount == pumpSubscriber.successCount.get()
@@ -254,7 +256,7 @@ public class PumpSubscriberSpec extends Specification {
     def "onNext doesn't do a new request chunk for middle of chunk processing"(){
         when:
         pumpSubscriber.successCount = new AtomicLong(3L)
-        pumpSubscriber.onNext(userRecordResult)
+        pumpSubscriber.onNext(new PumpRecordResult(userRecordResult, Mock(DrillResultRow)))
 
         then:
         0 * producer.request(_)
@@ -263,7 +265,7 @@ public class PumpSubscriberSpec extends Specification {
     def "onNext requests new chunk at end of chunk processing"(){
         when:
         pumpSubscriber.successCount = new AtomicLong(4L)
-        pumpSubscriber.onNext(userRecordResult)
+        pumpSubscriber.onNext(new PumpRecordResult(userRecordResult, Mock(DrillResultRow)))
 
         then:
         1 * producer.request(5)

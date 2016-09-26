@@ -12,13 +12,18 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 
+/**
+ * Provides Functions to transform records.
+ */
 public class TransformerFunctionFactoryImpl implements TransformerFunctionFactory {
     private static final Logger log = LoggerFactory.getLogger(TransformerFunctionFactoryImpl.class);
 
     @Inject
     private ObjectMapper objectMapper;
 
-
+    /**
+     * {@inheritDoc}
+     */
     public Function<byte[], byte[]> getReplayFlagTransformFunction(Boolean replayEnabled, Boolean overwriteEnabled) {
         final BooleanNode replayEnabledNode = replayEnabled? BooleanNode.TRUE : BooleanNode.FALSE;
         final BooleanNode overwriteEnabledNode = overwriteEnabled? BooleanNode.TRUE : BooleanNode.FALSE;

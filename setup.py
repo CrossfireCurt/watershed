@@ -14,10 +14,12 @@ if __name__ == "__main__":
         long_description=long_description,
         packages=[
             "watershed",
+            "pump_client"
         ],
         install_requires=[
             "Boto3",
-            "sshtunnel"
+            "sshtunnel",
+            "requests"
         ],
         test_requires=[
             'nose',

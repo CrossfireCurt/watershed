@@ -1,8 +1,11 @@
 {
   "AWS": {
+    "CloudWatch":{
+      "alarmOnIdle": true,
+      "alarmAfter": 120,
+      "alarmActions": ["arn:aws:sns:us-east-1:<ACCOUNT>:<SNS_TOPIC>"]
+    },
     "S3": {
-      "accessKey": "accessKey",
-      "secretKey": "secretKey",
       "resourcesBucket": "watershed",
       "resourcesPrefix": "resources"
     },
@@ -52,7 +55,7 @@
     ],
     "archives": [
       {
-        "dfsUrl": "s3://AccessKey:SecretKey@watershed",
+        "dfsUrl": "s3://watershed",
         "path": "/stream-archives",
         "name": "app_event"
       }

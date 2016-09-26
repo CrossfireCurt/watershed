@@ -64,15 +64,6 @@ Python/Boto solution which compliments Amazon Kinesis with:
         help="Specify the location of the private key file",
         required=True
     )
-    _profile_args = [
-        "-p",
-        "--profile"
-    ]
-    _profile_kwargs = dict(
-        action="store",
-        help="Specify the AWS profile to use. Defaults to 'default'",
-        default='default'
-    )
     _wait_until_ready_args = [
         '-w',
         '--wait-until-ready'
@@ -130,7 +121,7 @@ Python/Boto solution which compliments Amazon Kinesis with:
     forward_local_ports_parser.set_defaults(which="forward-local-ports")
     forward_local_ports_parser.add_argument(*_cluster_id_args, **_cluster_id_kwargs)
     forward_local_ports_parser.add_argument(*_private_key_args, **_private_key_kwargs)
-    forward_local_ports_parser.add_argument(*_profile_args, **_profile_kwargs)
+    forward_local_ports_parser.add_argument(*_config_file_args, **_config_file_kwargs)
     terminate_clusters_parser = subparsers.add_parser(
         'terminate-clusters',
         aliases=['t'],
@@ -146,7 +137,7 @@ Python/Boto solution which compliments Amazon Kinesis with:
         help='Clusters to terminate.',
         required=True
     )
-    terminate_clusters_parser.add_argument(*_profile_args, **_profile_kwargs)
+    terminate_clusters_parser.add_argument(*_config_file_args, **_config_file_kwargs)
     configure_streams_parser = subparsers.add_parser(
         'configure-streams',
         aliases=['c'],
@@ -163,8 +154,8 @@ Python/Boto solution which compliments Amazon Kinesis with:
         help="Wait for the cluster to start"
     )
     wait_for_cluster_parser.set_defaults(which="wait-for-cluster")
+    wait_for_cluster_parser.add_argument(*_config_file_args, **_config_file_kwargs)
     wait_for_cluster_parser.add_argument(*_cluster_id_args, **_cluster_id_kwargs)
-    wait_for_cluster_parser.add_argument(*_profile_args, **_profile_kwargs)
     do_everything_parser = subparsers.add_parser(
         'all',
         help="Start a cluster and forward ports using configuration files"
@@ -190,26 +181,21 @@ if __name__ == "__main__":
     args = get_argument_parser().parse_args()
     config = dict()
     if hasattr(args, 'which'):
-        if hasattr(args, 'config_file'):
-            config = load_configuration(args.config_file)
+        config = load_configuration(args.config_file)
 
         if args.which == "upload-resources":
             upload_resources(
-                config['AWS']['S3'],
-                config['AWS']['profile'],
+                config['AWS'],
                 args.force_upload
             )
-            
+
             upload_pump(
-                config['AWS']['S3'],
-                config['AWS']['profile'],
+                config['AWS'],
                 args.force_upload
             )
         elif args.which == "launch-cluster":
             launch_emr_cluster(
-                config['AWS']['S3'],
-                config['AWS']['EMR'],
-                config['AWS']['profile'],
+                config['AWS'],
                 args.wait_until_ready,
                 args.logging
             )
@@ -217,53 +203,43 @@ if __name__ == "__main__":
             forward_necessary_ports(
                 args.cluster_id,
                 args.private_key,
-                args.profile
+                config['AWS']['profile']
             )
         elif args.which == "terminate-clusters":
             terminate_emr_cluster(
                 args.cluster_ids,
-                args.profile
+                config['AWS']['profile']
             )
         elif args.which == "configure-streams":
             configure_streams(
                 args.cluster_id,
-                config['AWS']['S3'],
-                config['AWS']['streams'],
-                config['AWS']['archives'],
-                config['AWS']['profile'],
+                config['AWS'],
                 args.wait_until_ready
             )
         elif args.which == "wait-for-cluster":
             print("Cluster can take more than 5 minutes to start...")
             wait_for_cluster(
                 args.cluster_id,
-                args.profile
+                config['AWS']['profile']
             )
             print("Cluster ready.")
         elif args.which == "all":
             upload_resources(
-                config['AWS']['S3'],
-                config['AWS']['profile'],
+                config['AWS'],
                 True
             )
             upload_pump(
-                config['AWS']['S3'],
-                config['AWS']['profile'],
+                config['AWS'],
                 True
             )
             cluster_id = launch_emr_cluster(
-                config['AWS']['S3'],
-                config['AWS']['EMR'],
-                config['AWS']['profile'],
+                config['AWS'],
                 True,
                 args.logging
             )
             configure_streams(
                 cluster_id,
-                config['AWS']['S3'],
-                config['AWS']['streams'],
-                config['AWS']['archives'],
-                config['AWS']['profile'],
+                config['AWS'],
                 True
             )
             forward_necessary_ports(

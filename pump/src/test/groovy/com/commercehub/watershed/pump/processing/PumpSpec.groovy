@@ -131,8 +131,7 @@ public class PumpSpec extends Specification {
         then:
         //subscriber is told about the record
         testSubscriber.assertNoErrors()
-        testSubscriber.assertReceivedOnNext([userRecordResult])
-        testSubscriber.assertValue(userRecordResult)
+        testSubscriber.assertValueCount(1)
         testSubscriber.assertCompleted()
     }
 
@@ -178,8 +177,7 @@ public class PumpSpec extends Specification {
         then:
         //subscriber is told about the transformed record
         testSubscriber.assertNoErrors()
-        testSubscriber.assertReceivedOnNext([userRecordResult])
-        testSubscriber.assertValue(userRecordResult)
+        testSubscriber.assertValueCount(1)
         testSubscriber.assertCompleted()
     }
 

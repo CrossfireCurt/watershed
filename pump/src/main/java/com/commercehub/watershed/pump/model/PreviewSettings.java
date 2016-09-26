@@ -3,6 +3,9 @@ package com.commercehub.watershed.pump.model;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
+/**
+ * Holds configuration for how to run a job preview
+ */
 public class PreviewSettings {
     @NotNull
     private String queryIn;
@@ -11,18 +14,34 @@ public class PreviewSettings {
     @Min(0)
     private Integer previewCount;
 
+    /**
+     *
+     * @return the query used to run the preview
+     */
     public String getQueryIn() {
         return queryIn;
     }
 
+    /**
+     * set the query used to run the preview
+     * @param queryIn
+     */
     public void setQueryIn(String queryIn) {
         this.queryIn = queryIn;
     }
 
+    /**
+     *
+     * @return the number of rows to return in the job preview
+     */
     public Integer getPreviewCount() {
         return previewCount;
     }
 
+    /**
+     * set the number of rows to return in the job preview
+     * @param previewCount
+     */
     public void setPreviewCount(Integer previewCount) {
         this.previewCount = previewCount;
     }

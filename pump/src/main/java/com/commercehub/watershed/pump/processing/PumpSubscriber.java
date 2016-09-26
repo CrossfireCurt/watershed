@@ -1,8 +1,9 @@
 package com.commercehub.watershed.pump.processing;
 
-import com.amazonaws.services.kinesis.producer.UserRecordResult;
 import com.commercehub.watershed.pump.model.Job;
 import com.commercehub.watershed.pump.model.ProcessingStage;
+import com.commercehub.watershed.pump.model.PumpRecordResult;
+import com.commercehub.watershed.pump.model.DrillResultRow;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.google.inject.name.Named;
@@ -14,7 +15,10 @@ import rx.Subscriber;
 import java.text.NumberFormat;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class PumpSubscriber extends Subscriber<UserRecordResult> {
+/**
+ * A Subscriber for Pump that requests records and manages Job statistics
+ */
+public class PumpSubscriber extends Subscriber<PumpRecordResult> {
     private static final Logger log = LoggerFactory.getLogger(PumpSubscriber.class);
     private static final NumberFormat NUM_FMT = NumberFormat.getIntegerInstance();
 
@@ -25,17 +29,21 @@ public class PumpSubscriber extends Subscriber<UserRecordResult> {
     private Job job;
     private Pump pump;
 
+    private DrillResultRow lastSuccessfulRow;
+
     @Inject
     public PumpSubscriber(
             @Assisted Job job,
             @Assisted Pump pump,
             @Named("numRecordsPerChunk") int numRecordsPerChunk){
-
         this.job = job;
         this.pump = pump;
         this.numRecordsPerChunk = numRecordsPerChunk;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onStart(){
         if(job != null){
@@ -48,6 +56,9 @@ public class PumpSubscriber extends Subscriber<UserRecordResult> {
         request(numRecordsPerChunk);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onCompleted() {
         if(pump != null){
@@ -63,10 +74,14 @@ public class PumpSubscriber extends Subscriber<UserRecordResult> {
         }
     }
 
+    /**
+     * Populates Job with statistics for current state of Pump
+     */
     public void updateStats() {
         if(job != null){
             job.setSuccessfulRecordCount(successCount.get());
             job.setFailureRecordCount(failCount.get());
+            job.setLastSuccessfulRow(lastSuccessfulRow);
 
             if(pump != null){
                 job.setPendingRecordCount(pump.countPending());
@@ -81,6 +96,9 @@ public class PumpSubscriber extends Subscriber<UserRecordResult> {
                 (pump != null? NUM_FMT.format(pump.countPending()) : "unknown"));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void onError(Throwable e) {
         log.error("General failure, aborting.", e);
@@ -96,11 +114,15 @@ public class PumpSubscriber extends Subscriber<UserRecordResult> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void onNext(UserRecordResult userRecordResult) {
+    public void onNext(PumpRecordResult pumpRecordResult) {
         log.trace("Got a Kinesis result.");
-        if (userRecordResult.isSuccessful()) {
+        if (pumpRecordResult.getUserRecordResult().isSuccessful()) {
             successCount.incrementAndGet();
+            lastSuccessfulRow = pumpRecordResult.getDrillResultRow();
         }
         else {
             failCount.incrementAndGet();

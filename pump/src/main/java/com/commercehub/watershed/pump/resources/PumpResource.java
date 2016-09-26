@@ -16,7 +16,9 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Collection;
 
-
+/**
+ * REST endpoints to query, start, and manage Jobs
+ */
 @Path("/jobs")
 @Produces(MediaType.APPLICATION_JSON)
 public class PumpResource {
@@ -27,6 +29,13 @@ public class PumpResource {
     @Inject
     private JobService jobService;
 
+    /**
+     * GET Job in its current state
+     *
+     * @param jobId
+     * @return Response
+     * @throws IOException
+     */
     @Path("/{job_id}")
     @GET
     public Response getJob(@PathParam("job_id") String jobId) throws IOException{
@@ -39,6 +48,12 @@ public class PumpResource {
         return Response.ok().entity(response).build();
     }
 
+    /**
+     * GET all Jobs in their current state
+     *
+     * @return Response
+     * @throws IOException
+     */
     @GET
     public Response getAllJobs() throws IOException{
         Collection<Job> jobs = jobService.getAllJobs();
@@ -47,6 +62,13 @@ public class PumpResource {
         return Response.ok().entity(response).build();
     }
 
+    /**
+     * POST PumpSettings to kickoff a Job
+     *
+     * @param pumpSettings
+     * @return Response
+     * @throws IOException
+     */
     @POST
     public Response enqueueJob(@Valid PumpSettings pumpSettings) throws IOException{
         Job job = jobService.enqueueJob(pumpSettings);
@@ -55,6 +77,14 @@ public class PumpResource {
         return Response.ok().entity(response).build();
     }
 
+    /**
+     * POST PreviewSettings to retrieve a preview of a query
+     *
+     * @param previewSettings
+     * @return Response
+     * @throws IOException
+     * @throws SQLException
+     */
     @Path("/preview")
     @POST
     public Response previewJob(@Valid PreviewSettings previewSettings) throws IOException, SQLException{

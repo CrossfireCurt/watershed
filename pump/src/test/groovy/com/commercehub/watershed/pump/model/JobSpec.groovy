@@ -92,7 +92,7 @@ class JobSpec extends Specification{
 
         then:
         meanRate == null
-        job.getMeanRatePretty() == "∞ rec/s"
+        job.getMeanRatePretty() == "--- rec/s"
     }
 
     def "getMeanRate: elapsed time is not 0, successfulRecordCount + failureRecordCount is 0"(){

@@ -13,13 +13,15 @@
 # limitations under the License.
 
 from time import sleep
+from urllib import parse
 
+from os import path
 import boto3
 
 from watershed.aws_tools.s3 import upload_stream_archive_configuration
 
 
-def _wait_till_not_running_steps(cluster_id, profile='default'):
+def _wait_till_not_running_steps(cluster_id, profile="default"):
     emr_client = boto3.session.Session(profile_name=profile).client('emr')
 
     try:
@@ -36,15 +38,15 @@ def _wait_till_not_running_steps(cluster_id, profile='default'):
     return "Cluster failed to finish step timely."
 
 
-def get_master_address(cluster_id, profile='default'):
+def get_master_address(cluster_id, profile="default"):
     emr_client = boto3.session.Session(profile_name=profile).client('emr')
 
     if cluster_id is None:
         raise ValueError("Cluster ID cannot be none.")
     try:
-        json_description = emr_client.describe_cluster(ClusterId=cluster_id)
+        json_description = emr_client.list_instances(ClusterId=cluster_id, InstanceGroupTypes=['MASTER'])
         print(json_description)
-        return json_description['Cluster']['MasterPublicDnsName']
+        return json_description['Instances'][0]['PrivateIpAddress']
     except Exception as aws_except:
         raise ValueError(aws_except)
 
@@ -56,7 +58,12 @@ def wait_for_cluster(cluster_id, profile="default"):
     _wait_till_not_running_steps(cluster_id, profile)
 
 
-def launch_emr_cluster(s3_config=None, emr_config=None, profile="default", wait_until_ready=False, logging=False):
+def launch_emr_cluster(config=None, wait_until_ready=False, logging=False):
+    s3_config = config['S3']
+    alarm_config = config.get('CloudWatch')
+    emr_config = config['EMR']
+    profile = config['profile']
+
     emr_client = boto3.session.Session(profile_name=profile).client('emr')
 
     s3_url = "s3://"+s3_config['resourcesBucket']+"/"+s3_config['resourcesPrefix']
@@ -161,7 +168,8 @@ def launch_emr_cluster(s3_config=None, emr_config=None, profile="default", wait_
         'InstanceGroups': instance_groups,
         'Ec2KeyName': emr_config['ec2KeyName'] if emr_config['ec2KeyName'] is not None else "",
         'Ec2SubnetId': emr_config['ec2SubnetId'] if emr_config['ec2SubnetId'] is not None else "",
-        'AdditionalMasterSecurityGroups': emr_config['additionalMasterSecurityGroups'] if emr_config['additionalMasterSecurityGroups'] is not None else []
+        'AdditionalMasterSecurityGroups': emr_config['additionalMasterSecurityGroups'] if emr_config['additionalMasterSecurityGroups'] is not None else [],
+        'AdditionalSlaveSecurityGroups': emr_config['additionalSlaveSecurityGroups'] if emr_config['additionalSlaveSecurityGroups'] is not None else []
     }
     try:
         if logging:
@@ -196,6 +204,27 @@ def launch_emr_cluster(s3_config=None, emr_config=None, profile="default", wait_
             wait_for_cluster(cluster_id, profile)
             _wait_till_not_running_steps(cluster_id, profile)
             print("Cluster '{0}' ready.".format(cluster_id))
+        if alarm_config["alarmOnIdle"]:
+            print("Creating CloudWatch to alarm after " + str(alarm_config["alarmAfter"]) + " minutes.")
+            cw_client = boto3.session.Session(profile_name=profile).client("cloudwatch")
+            cw_client.put_metric_alarm(
+                AlarmName="Watershed is Idle for too long",
+                ActionsEnabled=True,
+                AlarmActions=alarm_config["alarmActions"],
+                MetricName="IsIdle",
+                Namespace="AWS/ElasticMapReduce",
+                Statistic="Average",
+                Period=60,
+                Dimensions=[
+                    {
+                        "Name": "JobFlowId",
+                        "Value": return_json['JobFlowId']
+                    }
+                ],
+                EvaluationPeriods=alarm_config["alarmAfter"],
+                Threshold=1,
+                ComparisonOperator="GreaterThanOrEqualToThreshold"
+            )
         return return_json['JobFlowId']
     except Exception as aws_except:
         raise ValueError(aws_except)
@@ -209,11 +238,19 @@ def terminate_emr_cluster(cluster_ids=None, profile='default'):
         print("Attempted to terminate the following cluster Ids:")
         for cluster_id in cluster_ids:
             print("  * '"+cluster_id+"'")
+        cw_client = boto3.session.Session(profile_name=profile).client("cloudwatch")
+        cw_client.delete_alarms(
+            AlarmNames=["Watershed is Idle for too long"]
+        )
     except Exception as aws_except:
         raise ValueError(aws_except)
 
 
-def configure_stream_tables(cluster_id, s3_config=None, stream_configs=None, profile='default'):
+def configure_stream_tables(cluster_id, config=None):
+    s3_config = config['S3']
+    stream_configs = config['streams']
+    profile = config['profile']
+
     emr_client = boto3.session.Session(profile_name=profile).client('emr')
 
     s3_url = "s3://" + s3_config['resourcesBucket'] + "/" + s3_config['resourcesPrefix']
@@ -251,8 +288,25 @@ def configure_stream_tables(cluster_id, s3_config=None, stream_configs=None, pro
         raise ValueError(aws_except)
 
 
-def configure_stream_archives(cluster_id, s3_config=None, archive_configs=None, profile='default'):
-    archives = {}
+def configure_stream_archives(cluster_id, config=None):
+    s3_config = config['S3']
+    archive_configs = config['archives']
+    profile = config['profile']
+
+    if s3_config.get("accessKey") is not None and s3_config.get("secretKey") is not None:
+        sample_dfs_url = "s3://" + s3_config["accessKey"] + ":" + parse.quote_plus(s3_config["secretKey"]) + "@" + s3_config["resourcesBucket"]
+    else:
+        sample_dfs_url = "s3://" + s3_config["resourcesBucket"]
+
+    archives = {
+        # Adding entry for sample data
+        sample_dfs_url: [
+            {
+                "archive_path": "/" + path.join(s3_config["resourcesPrefix"], "sample_data"),
+                "archive_name": "sample_data"
+            }
+        ]
+    }
 
     for archive in archive_configs:
         dfs_url = archive['dfsUrl']
@@ -267,7 +321,7 @@ def configure_stream_archives(cluster_id, s3_config=None, archive_configs=None, 
     conf_files = []
     for dfs_url in archives.keys():
         conf_file = {
-            "name": dfs_url.split('@')[1],
+            "name": dfs_url.split('s3://')[1],
             "config": {
                 "type": "file",
                 "enabled": "true",
@@ -284,7 +338,7 @@ def configure_stream_archives(cluster_id, s3_config=None, archive_configs=None, 
             }
         conf_files.append(conf_file)
 
-    config_paths = upload_stream_archive_configuration(s3_config, conf_files, profile)
+    config_paths = upload_stream_archive_configuration(config, conf_files)
 
     emr_client = boto3.session.Session(profile_name=profile).client('emr')
 
@@ -292,9 +346,7 @@ def configure_stream_archives(cluster_id, s3_config=None, archive_configs=None, 
 
     args_list = [
         s3_url + '/emr/python/upload_drill_storage_configuration.py',
-        s3_config["resourcesBucket"],
-        s3_config["accessKey"],
-        s3_config["secretKey"]
+        s3_config["resourcesBucket"]
     ]
 
     args_list += config_paths
@@ -320,10 +372,11 @@ def configure_stream_archives(cluster_id, s3_config=None, archive_configs=None, 
         raise ValueError(aws_except)
 
 
-def configure_streams(cluster_id, s3_config=None, stream_configs=None, archive_configs=None, profile='default', wait_until_ready=False):
+def configure_streams(cluster_id, config=None, wait_until_ready=False):
+    profile = config['profile']
     try:
-        configure_stream_tables(cluster_id, s3_config, stream_configs, profile)
-        configure_stream_archives(cluster_id, s3_config, archive_configs, profile)
+        configure_stream_tables(cluster_id, config)
+        configure_stream_archives(cluster_id, config)
         if wait_until_ready:
             print("Waiting option selected. Waiting until step(s) complete.")
             print(_wait_till_not_running_steps(cluster_id, profile))
