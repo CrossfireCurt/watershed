@@ -1,6 +1,3 @@
-# THIS PROJECT IS DEPRECATED
-watershed is no longer maintained, and **this** repository will be removed from GitHub on or after 2017-03-26.
-
 # Watershed
 
 Archival-replay suite designed for AWS Kinesis and S3
